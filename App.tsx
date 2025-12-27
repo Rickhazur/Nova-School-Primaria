@@ -12,6 +12,7 @@ const Progress = React.lazy(() => import('./components/Progress'));
 const Flashcards = React.lazy(() => import('./components/Flashcards'));
 const SocialHub = React.lazy(() => import('./components/SocialHub'));
 const RewardsStore = React.lazy(() => import('./components/RewardsStore'));
+import { LoginScreen } from './components/LoginScreen';
 const Settings = React.lazy(() => import('./components/Settings'));
 const TestingCenter = React.lazy(() => import('./components/TestingCenter'));
 const ParentAgreement = React.lazy(() => import('./components/ParentAgreement'));
@@ -146,18 +147,21 @@ const App: React.FC = () => {
         return false;
     };
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent, modeOverride?: 'STUDENT' | 'ADMIN', dataOverride?: any) => {
         e.preventDefault();
-        let emailToAuth = loginMode === 'STUDENT' ? studentForm.email : adminForm.email;
-        let passwordToAuth = loginMode === 'STUDENT' ? studentForm.password : adminForm.password;
+        const mode = modeOverride || loginMode;
+        const data = dataOverride || (mode === 'STUDENT' ? studentForm : adminForm);
 
-        if (loginMode === 'STUDENT' && !studentForm.guardianPhone.trim()) {
+        let emailToAuth = data.email;
+        let passwordToAuth = data.password;
+
+        if (mode === 'STUDENT' && (!data.guardianPhone || !data.guardianPhone.trim())) {
             alert("Por favor ingresa el WhatsApp del acudiente.");
             return;
         }
 
         try {
-            const user = await loginWithSupabase(emailToAuth, passwordToAuth, loginMode);
+            const user = await loginWithSupabase(emailToAuth, passwordToAuth, mode);
             setUserId(user.uid);
             setUserName(user.name);
             setUserRole(user.role as any);
@@ -165,9 +169,9 @@ const App: React.FC = () => {
             setIsMockSession(false);
             setIsAuthenticated(true);
 
-            if (loginMode === 'STUDENT' && studentForm.guardianPhone) {
+            if (mode === 'STUDENT' && data.guardianPhone) {
                 const { saveGuardianPhone } = await import('./services/supabase');
-                await saveGuardianPhone(user.uid, studentForm.guardianPhone);
+                await saveGuardianPhone(user.uid, data.guardianPhone);
             }
 
             const hasRemedial = await loadRemedialPlan(user.uid);
@@ -247,153 +251,35 @@ const App: React.FC = () => {
     };
 
     if (!isAuthenticated) {
-        // Translations for Login
-        const t = {
-            es: { student: 'Estudiante', admin: 'Administrativo', mail: 'CORREO ESTUDIANTE', guardian: 'WHATSAPP ACUDIENTE', pass: 'CONTRASEÑA', login: 'INGRESAR A CLASE', access: 'ACCESO PANEL' },
-            en: { student: 'Student', admin: 'Administrative', mail: 'STUDENT EMAIL', guardian: 'PARENT WHATSAPP', pass: 'PASSWORD', login: 'ENTER CLASS', access: 'DASHBOARD ACCESS' }
-        };
-        const text = t[language === 'bilingual' ? 'en' : language];
-
         return (
-            <div className="min-h-screen bg-[#000000] flex items-center justify-center p-6 font-sans selection:bg-cyan-500/30">
+            <>
+                <LoginScreen
+                    onLogin={(e, mode, data) => {
+                        // Adapt existing handleLogin logic
+                        e.preventDefault();
+                        if (mode === 'STUDENT') {
+                            setLoginMode('STUDENT');
+                            setStudentForm({ ...studentForm, email: data.email, password: data.password, guardianPhone: data.guardianPhone || '' });
+                            // Trigger the actual login in the next tick or call handleLogin directly if adapted
+                            // For now, we reuse the state and call handleLogin manually or refactor handleLogin to accept args
+                            // Let's refactor handleLogin to take args or set state then call it.
+                            handleLogin(e, mode, data);
+                        } else {
+                            setLoginMode('ADMIN');
+                            setAdminForm({ ...adminForm, email: data.email, password: data.password });
+                            handleLogin(e, mode, data);
+                        }
+                    }}
+                    language={language}
+                    setLanguage={setLanguage}
+                />
 
-                {/* Main Container */}
-                <div className="w-full max-w-[420px] mx-auto flex flex-col items-center">
-
-                    {/* Logo Area */}
-                    <div className="mb-10 text-center">
-                        <div className="w-16 h-16 bg-[#0E0E10] border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-cyan-900/10">
-                            <Brain className="w-8 h-8 text-cyan-400" />
-                        </div>
-                        <h1 className="text-3xl font-black text-white tracking-widest uppercase">NOVA <span className="text-cyan-400">SCHOLA</span></h1>
-                        <p className="text-slate-500 text-xs font-medium tracking-wide mt-2">AI Powered Educational Ecosystem</p>
-                    </div>
-
-                    {/* Language Switcher */}
-                    <div className="mb-8">
-                        <div className="bg-[#0E0E10] border border-white/5 rounded-full p-1 flex">
-                            <button onClick={() => setLanguage('es')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${language === 'es' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20' : 'text-slate-500 hover:text-white'}`}>Español</button>
-                            <button onClick={() => setLanguage('en')} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${language === 'en' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20' : 'text-slate-500 hover:text-white'}`}>English</button>
-                        </div>
-                    </div>
-
-                    {/* Auth Card */}
-                    <div className="w-full bg-[#0E0E10] border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-
-                        {/* Role Tabs */}
-                        <div className="flex bg-[#18181B] rounded-xl p-1 mb-6">
-                            <button onClick={() => setLoginMode('STUDENT')} className={`flex-1 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${loginMode === 'STUDENT' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}>
-                                <Smartphone className="w-3.5 h-3.5" /> {text.student}
-                            </button>
-                            <button onClick={() => setLoginMode('ADMIN')} className={`flex-1 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${loginMode === 'ADMIN' ? 'bg-[#27272A] text-white border border-white/5' : 'text-slate-500 hover:text-slate-300'}`}>
-                                <ShieldCheck className="w-3.5 h-3.5" /> {text.admin}
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleLogin} className="space-y-4">
-                            {loginMode === 'STUDENT' ? (
-                                <>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 tracking-wider ml-1">{text.mail}</label>
-                                        <div className="relative group">
-                                            <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
-                                            <input
-                                                type="email"
-                                                value={studentForm.email}
-                                                onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
-                                                className="w-full bg-[#18181B] border border-transparent focus:border-cyan-500/50 focus:bg-[#202025] text-white rounded-xl py-3.5 pl-11 pr-4 text-sm placeholder:text-slate-600 outline-none transition-all"
-                                                placeholder="estudiante@colegio.edu"
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 tracking-wider ml-1">{text.guardian}</label>
-                                        <div className="relative group">
-                                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
-                                            <input
-                                                type="tel"
-                                                value={studentForm.guardianPhone}
-                                                onChange={(e) => setStudentForm({ ...studentForm, guardianPhone: e.target.value })}
-                                                className="w-full bg-[#18181B] border border-transparent focus:border-cyan-500/50 focus:bg-[#202025] text-white rounded-xl py-3.5 pl-11 pr-4 text-sm placeholder:text-slate-600 outline-none transition-all"
-                                                placeholder="300 123 4567"
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 tracking-wider ml-1">{text.pass}</label>
-                                        <div className="relative group">
-                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
-                                            <input
-                                                type="password"
-                                                value={studentForm.password}
-                                                onChange={(e) => setStudentForm({ ...studentForm, password: e.target.value })}
-                                                className="w-full bg-[#18181B] border border-transparent focus:border-cyan-500/50 focus:bg-[#202025] text-white rounded-xl py-3.5 pl-11 pr-4 text-sm placeholder:text-slate-600 outline-none transition-all"
-                                                placeholder="********"
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 tracking-wider ml-1">CORREO CORPORATIVO</label>
-                                        <div className="relative group">
-                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
-                                            <input
-                                                type="email"
-                                                value={adminForm.email}
-                                                onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
-                                                className="w-full bg-[#18181B] border border-transparent focus:border-indigo-500/50 focus:bg-[#202025] text-white rounded-xl py-3.5 pl-11 pr-4 text-sm placeholder:text-slate-600 outline-none transition-all"
-                                                placeholder="admin@nova.edu"
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 tracking-wider ml-1">{text.pass}</label>
-                                        <div className="relative group">
-                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
-                                            <input
-                                                type="password"
-                                                value={adminForm.password}
-                                                onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
-                                                className="w-full bg-[#18181B] border border-transparent focus:border-indigo-500/50 focus:bg-[#202025] text-white rounded-xl py-3.5 pl-11 pr-4 text-sm placeholder:text-slate-600 outline-none transition-all"
-                                                placeholder="********"
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            <button type="submit" className={`w-full text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 mt-2 transition-all shadow-lg hover:translate-y-[-1px] active:translate-y-0 ${loginMode === 'STUDENT' ? 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-900/20' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/20'}`}>
-                                <span className="text-xs tracking-widest uppercase">{loginMode === 'STUDENT' ? text.login : text.access}</span>
-                                <ArrowRight className="w-4 h-4" />
-                            </button>
-
-                            {/* Offline Indicator - Styled as Red Button/Badge */}
-                            {isOffline && (
-                                <button type="button" className="w-full bg-rose-950/30 border border-rose-900/50 text-rose-400 text-[10px] font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 animate-pulse cursor-default">
-                                    <Zap className="w-3 h-3 fill-rose-500" />
-                                    <span>CONEXION OFFLINE</span>
-                                </button>
-                            )}
-                        </form>
-                    </div>
-
-                    {/* Dev Tools Footer */}
-                    <div className="mt-8">
-                        <button onClick={() => setTestingCenterOpen(true)} className="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 hover:text-slate-500 transition-colors uppercase tracking-widest">
-                            <Activity className="w-3 h-3" /> Dev Tools
-                        </button>
-                    </div>
-
-                    <TestingCenter isOpen={isTestingCenterOpen} onClose={() => setTestingCenterOpen(false)} onSimulatePersona={handleSimulatePersona} onTriggerAction={handleTriggerAction} />
+                {/* Dev Tools Trigger (Hidden) */}
+                <div className="fixed bottom-4 left-4 z-50">
+                    <button onClick={() => setTestingCenterOpen(true)} className="opacity-0 hover:opacity-50 text-white text-xs">🛠️</button>
                 </div>
-            </div>
+                <TestingCenter isOpen={isTestingCenterOpen} onClose={() => setTestingCenterOpen(false)} onSimulatePersona={handleSimulatePersona} onTriggerAction={handleTriggerAction} />
+            </>
         );
     }
 
