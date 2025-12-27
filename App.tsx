@@ -275,9 +275,7 @@ const App: React.FC = () => {
                 />
 
                 {/* Dev Tools Trigger (Hidden) */}
-                <div className="fixed bottom-4 left-4 z-50">
-                    <button onClick={() => setTestingCenterOpen(true)} className="opacity-0 hover:opacity-50 text-white text-xs">🛠️</button>
-                </div>
+                {/* Dev Tools Trigger Removed for Production Safety */}
                 <TestingCenter isOpen={isTestingCenterOpen} onClose={() => setTestingCenterOpen(false)} onSimulatePersona={handleSimulatePersona} onTriggerAction={handleTriggerAction} />
             </>
         );
