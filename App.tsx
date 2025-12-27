@@ -252,7 +252,7 @@ const App: React.FC = () => {
             es: { student: 'Estudiante', admin: 'Administrativo', mail: 'CORREO ESTUDIANTE', guardian: 'WHATSAPP ACUDIENTE', pass: 'CONTRASEÑA', login: 'INGRESAR A CLASE', access: 'ACCESO PANEL' },
             en: { student: 'Student', admin: 'Administrative', mail: 'STUDENT EMAIL', guardian: 'PARENT WHATSAPP', pass: 'PASSWORD', login: 'ENTER CLASS', access: 'DASHBOARD ACCESS' }
         };
-        const text = t[language];
+        const text = t[language === 'bilingual' ? 'en' : language];
 
         return (
             <div className="min-h-screen bg-[#000000] flex items-center justify-center p-6 font-sans selection:bg-cyan-500/30">

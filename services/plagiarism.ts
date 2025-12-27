@@ -1,7 +1,4 @@
-import abacusai from 'abacusai';
 import { ResearchSource, PlagiarismCheck } from '../types';
-
-const client = new abacusai.ApiClient();
 
 /**
  * Compare student text against saved sources to detect potential plagiarism
@@ -20,7 +17,7 @@ export async function checkPlagiarism(
     for (const source of sources) {
       // Combine all highlights from the source
       const sourceText = source.highlights.join(' ');
-      
+
       if (!sourceText || sourceText.length < 20) continue;
 
       // Use Abacus.AI to analyze semantic similarity
@@ -53,7 +50,7 @@ Be strict: even minor word changes should be flagged if the sentence structure i
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.ABACUS_API_KEY || ''}`
+          'Authorization': `Bearer ${import.meta.env.VITE_ABACUS_API_KEY || ''}`
         },
         body: JSON.stringify({
           messages: [{ role: 'user', content: prompt }],
@@ -65,7 +62,7 @@ Be strict: even minor word changes should be flagged if the sentence structure i
       if (response.ok) {
         const data = await response.json();
         const result = JSON.parse(data.response || '{}');
-        
+
         if (result.matches && result.matches.length > 0) {
           result.matches.forEach((match: any) => {
             // Find the position in student text

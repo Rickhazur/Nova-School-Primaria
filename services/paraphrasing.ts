@@ -1,7 +1,4 @@
-import abacusai from 'abacusai';
 import { ParaphrasingAttempt } from '../types';
-
-const client = new abacusai.ApiClient();
 
 /**
  * Generate paraphrased versions of text at different reading levels
@@ -23,7 +20,7 @@ export async function generateParaphrases(
     const paraphrasedVersions = [];
 
     for (const { level, description } of readingLevels) {
-      const prompt = language === 'es' 
+      const prompt = language === 'es'
         ? `Eres un asistente de parafraseo para niños de primaria.
 
 Texto original: "${originalText}"
@@ -78,7 +75,7 @@ Make sure to:
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.ABACUS_API_KEY || ''}`
+          'Authorization': `Bearer ${import.meta.env.VITE_ABACUS_API_KEY || ''}`
         },
         body: JSON.stringify({
           messages: [{ role: 'user', content: prompt }],
@@ -90,7 +87,7 @@ Make sure to:
       if (response.ok) {
         const data = await response.json();
         const result = JSON.parse(data.response || '{}');
-        
+
         paraphrasedVersions.push({
           text: result.paraphrasedText || originalText,
           readingLevel: description,
@@ -131,24 +128,24 @@ export function highlightDifferences(
 ): { original: string[]; paraphrased: string[] } {
   const originalWords = original.toLowerCase().split(/\s+/);
   const paraphrasedWords = paraphrased.toLowerCase().split(/\s+/);
-  
+
   // Simple word-by-word comparison
   // In a production app, you'd want a more sophisticated diff algorithm
   const originalHighlights: string[] = [];
   const paraphrasedHighlights: string[] = [];
-  
+
   originalWords.forEach(word => {
     if (!paraphrasedWords.includes(word)) {
       originalHighlights.push(word);
     }
   });
-  
+
   paraphrasedWords.forEach(word => {
     if (!originalWords.includes(word)) {
       paraphrasedHighlights.push(word);
     }
   });
-  
+
   return {
     original: originalHighlights,
     paraphrased: paraphrasedHighlights
