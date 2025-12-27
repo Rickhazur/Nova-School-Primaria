@@ -55,7 +55,7 @@ const App: React.FC = () => {
     const [studentForm, setStudentForm] = useState({ email: '', guardianPhone: '', password: '' });
     const [adminForm, setAdminForm] = useState({ email: '', password: '' });
 
-    const [isAuthenticated, setIsAuthenticated] = useState(true) // Skip ParentAgreement;
+    const [isAuthenticated, setIsAuthenticated] = useState(false) // Skip ParentAgreement;
     const [userId, setUserId] = useState<string>('');
     const [userName, setUserName] = useState<string>('');
     const [userRole, setUserRole] = useState<'STUDENT' | 'ADMIN'>('STUDENT');
