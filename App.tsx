@@ -45,7 +45,7 @@ import { Brain, Lock, Zap, ArrowRight, ShieldCheck, Activity, Smartphone, Mail, 
 const App: React.FC = () => {
     const [currentView, setCurrentView] = useState<ViewState>(ViewState.DASHBOARD);
     const [isTourOpen, setTourOpen] = useState(true) // Skip ParentAgreement;
-    const [isTestingCenterOpen, setTestingCenterOpen] = useState(true) // Skip ParentAgreement;
+    const [isTestingCenterOpen, setTestingCenterOpen] = useState(false) // Skip ParentAgreement;
     const [loginMode, setLoginMode] = useState<'STUDENT' | 'ADMIN'>('STUDENT');
 
     // LANGUAGE & AGE STATE
